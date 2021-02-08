@@ -1,0 +1,12 @@
+# tex auto-generated files
+*.aux
+*.log
+*.out
+
+# python stuffs
+__pycache__/
+.ipynb_checkpoints/
+
+# my own stuffs
+corbeille/
+trash.py

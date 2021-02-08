@@ -1,0 +1,50 @@
+\documentclass{article}
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb}
+ 
+
+\begin{document}
+
+
+\section{Little-\texttt{\{oh,omega}\} notation}
+  \begin{align*}
+    %o(g(n))      & \,\cup\, \Omega(g(n)) = O(g(n)) \\
+    %o(g(n))      & \,\cap\, \Omega(g(n)) = \emptyset
+		o(g(n))      \,\cup\, \Omega(g(n)) &= O(g(n)) \\
+		o(g(n))      \,\cap\, \Omega(g(n)) &= \emptyset
+  \end{align*}
+
+  \begin{align*}
+    o(g(n))      & \subseteq O(g(n)) \\
+    \Omega(g(n)) & \subseteq O(g(n)) \\
+  \end{align*}
+
+\noindent
+\textbf{\textsl{3.1-1}}
+Let $f(n)$ and $g(n)$ be asymptotically nonnegative functions. Using the basic definition of $\Theta$-notation,
+prove that $\max\left(f(n), g(n)\right) = \Theta(f(n) + g(n))$.
+\newline
+\newline
+%\hline
+
+If we allow us to reframe the question. Define
+\begin{align*}
+	h \!:\quad n \;&\mapsto\quad \max(f(n), g(n)) \\
+	l \!:\quad n \;&\mapsto\quad f(n) + g(n)
+\end{align*}
+Then we are supposed to show that $h(n) = \Theta(l(n))$.
+
+\noindent
+Since $f$ and $g$ are asymtotically nonnegative, we have
+\begin{align*}
+	& \exists\; n_1 \quad\textrm{s.t.}\quad f(n) \ge 0 \quad\forall\; n \ge n_1 \\
+	& \exists\; n_2 \quad\textrm{s.t.}\quad g(n) \ge 0 \quad\forall\; n \ge n_2
+\end{align*}
+Let $n_3 = \max(n_1, n_2)$. Then for the constants $c_1=\frac{1}{2}, c_2=1, n_3$, we see that
+\begin{align*}
+	c_1 l(n) &\le h(n) \le c_2 l(n) \quad\forall\; n \ge n_3\,, \quad \textrm{i.e.}\\
+	\frac{1}{2}(f(n) + g(n)) &\le \max\left(f(n), g(n)\right) \le f(n) + g(n) \quad\forall\; n \ge n_3\,.
+\end{align*}
+\hfill$\blacksquare$
+
+\end{document}
