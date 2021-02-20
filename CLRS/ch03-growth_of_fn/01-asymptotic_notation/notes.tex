@@ -6,18 +6,20 @@
 \begin{document}
 
 
-\section{Little-\texttt{\{oh,omega}\} notation}
-  \begin{align*}
-    %o(g(n))      & \,\cup\, \Omega(g(n)) = O(g(n)) \\
-    %o(g(n))      & \,\cap\, \Omega(g(n)) = \emptyset
-		o(g(n))      \,\cup\, \Omega(g(n)) &= O(g(n)) \\
-		o(g(n))      \,\cap\, \Omega(g(n)) &= \emptyset
-  \end{align*}
+\section{Little-\texttt{\{oh,omega,theta}\} notation}
+Relationships btw the sets $O(g(n)), \Omega(g(n)), \Theta(g(n)), o(g(n)), \omega(g(n))$ and $\theta(g(n)).$
 
   \begin{align*}
-    o(g(n))      & \subseteq O(g(n)) \\
-    \Omega(g(n)) & \subseteq O(g(n)) \\
+    %\Omega(g(n)) &\,\cap\, O(g(n)) \,=\, \Theta\left(g(n)\right) \\
+    %o(g(n)) &\,\subset\, O(g(n)) \,-\, \Theta\left(g(n)\right)
+    %\Omega(g(n)) \,\cap\, O(g(n))\; &=\, \Theta(g(n)) \\
+    \Theta(g(n))\; &=\, \Omega(g(n)) \,\cap\, O(g(n)) \\
+    %o(g(n)) &\subset\, O(g(n)) \,-\, \Theta\left(g(n)\right) \\
+    o(g(n)) &\subsetneq\, O(g(n)) \,\setminus\, \Theta\left(g(n)\right) \\
+    %% redundant
+    %o(g(n))      \,\cap\, \Omega(g(n)) &= \emptyset
   \end{align*}
+
 
 \noindent
 \textbf{\textsl{3.1-1}}
