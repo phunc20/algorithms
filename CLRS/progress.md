@@ -5,6 +5,9 @@
 - (2021/04/04 (日)) [Section 2.1 Insertion sort]
   - Done lecture
   - not yet exo
+- (2021/04/05 (lun)) [Section 4.1 max-subarray problem]
+  - Done lecture
+  - not yet exo
 
 
 #### Statistics
