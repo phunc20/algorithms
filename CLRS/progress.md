@@ -13,6 +13,10 @@
   - Done lecture
   - not yet exo
 - (2021/04/07 (mer)) [Section 4.1 max-subarray problem]
+- (2021/04/11 (dim)) [Appendix B.4 and B.5]
+  - B.4 read thru thoroughly
+  - B.5 skips proof of equiv. and positional trees
+  - not yet exo
 
 
 #### Statistics
