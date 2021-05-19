@@ -27,3 +27,4 @@
   - 10.1 Done lecture, not yet exo
   - 10.2 Done lecture, not yet exo
     - (but **sentinel** not quite understand; read again later maybe)
+  - 10.3 til "**a single-array represetation of obj**" (p.242)
