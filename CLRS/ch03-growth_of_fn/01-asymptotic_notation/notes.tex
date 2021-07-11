@@ -1,25 +1,48 @@
 \documentclass{article}
-\usepackage[utf8]{vietnam}
+%\usepackage[utf8]{vietnam}
 \usepackage{amsmath,amssymb}
+\usepackage{tikz}
  
 
 \begin{document}
 
+\def\firstcircle{(0,0) circle (2cm)}
+\def\secondcircle{(0:2.5cm) circle (2cm)}
 
-\section{Big/little-\texttt{\{oh,omega,theta\}} notation}
-Relationships btw the sets $O(g(n)),\; o(g(n)),\; \Omega(g(n)),\; \omega(g(n))\;\; and\;\; \Theta(g(n)).$ 
+\section{The Big/Little-\texttt{\{oh,omega,theta\}} Notations}
+Relationships btw the sets $O(g(n)),\; o(g(n)),\; \Omega(g(n)),\; \omega(g(n))\; \text{and}\; \Theta(g(n)):$ 
+\vskip 1cm
+  \begin{tikzpicture}
+    %\filldraw[color=green, fill=green!50, very thick] \firstcircle (0,1.8) node[above,left] {$O(g(n))$};
+    %\filldraw[color=red, fill=red!50, very thick] \secondcircle (2cm,1.8) node[above,right] {$\Omega(g(n))$};
+    %\draw[very thick] \firstcircle (0,1.8) node[above,left,black] {$O(g(n))$};
+    %\draw[very thick] \secondcircle (2cm,1.8) node[above,right,black] {$\Omega(g(n))$};
+    \draw \firstcircle (-2cm,-1cm) node[above,left,black] {$O(g(n))$};
+    \draw \secondcircle (4.5cm,-1cm) node[above,right,black] {$\Omega(g(n))$};
+    \begin{scope}[fill opacity=0.5]
+      \fill[red] \firstcircle;
+      \fill[green] \secondcircle;
+    \end{scope}
+    \node[left] at (0,0) {$o(g(n))$};
+    \node[right] at (0:2.5cm) {$\omega(g(n))$};
+    \node at (0:1.25cm) {$\tiny{\Theta(g(n))}$};
+  \end{tikzpicture}
 
   \begin{align*}
     %\Omega(g(n)) &\,\cap\, O(g(n)) \,=\, \Theta\left(g(n)\right) \\
     %o(g(n)) &\,\subset\, O(g(n)) \,-\, \Theta\left(g(n)\right)
     %\Omega(g(n)) \,\cap\, O(g(n))\; &=\, \Theta(g(n)) \\
-    \Theta(g(n))\; &=\, \Omega(g(n)) \,\cap\, O(g(n)) \\
+    \Theta(g(n)) &=\, \Omega(g(n)) \,\cap\, O(g(n)) \\
     %o(g(n)) &\subset\, O(g(n)) \,-\, \Theta\left(g(n)\right) \\
-    o(g(n)) &\subsetneq\, O(g(n)) \,\setminus\, \Omega\left(g(n)\right) \\
+    %o(g(n)) &\subsetneq\, O(g(n)) \,\setminus\, \Omega\left(g(n)\right) \\
+    O(g(n)) &= o(g(n)) \sqcup \Theta(g(n)) \\
+    \Omega(g(n)) &= \omega(g(n)) \sqcup \Theta(g(n)) \\
     %% redundant
     %o(g(n))      \,\cap\, \Omega(g(n)) &= \emptyset
   \end{align*}
-
+\vskip -1em
+\noindent where $\sqcup$ denotes disjoint union.
+\vskip 2em
 
 \noindent
 \textbf{\textsl{3.1-1}}

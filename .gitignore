@@ -9,5 +9,4 @@ __pycache__/
 
 # my own stuffs
 corbeille/
-trash.py
-trash.jl
+trash.*
