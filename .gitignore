@@ -6,6 +6,7 @@
 # python stuffs
 __pycache__/
 .ipynb_checkpoints/
+*.pyc
 
 # my own stuffs
 corbeille/
