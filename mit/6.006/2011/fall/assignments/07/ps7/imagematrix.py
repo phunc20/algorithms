@@ -93,6 +93,7 @@ class ImageMatrix(dict):
         with removing that pixel."""
         if i==0 or j==0 or i==self.width-1 or j==self.height-1:
             # For simplicity, return an arbitrarily large value on the edge.
+            # math.inf or np.inf are also good candidates.
             return 10000
         else: # I think this is equivalent to the Sobel gradient magnitude.
             return self.distance(self[i-1,j], self[i+1,j]) +\
