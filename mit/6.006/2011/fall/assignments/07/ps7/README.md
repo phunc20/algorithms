@@ -26,3 +26,8 @@ print 'You do not have PIL (the Python Imaging Library) installed.'
 in `imagematrix.py`, we could infer that these Python scripts were
 written for Python2.7.
 
+
+
+
+
+https://karthikkaranth.me/blog/implementing-seam-carving-with-python/
