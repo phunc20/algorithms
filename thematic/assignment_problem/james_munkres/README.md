@@ -22,7 +22,7 @@
    Then the sequence $\texttt{sum}(A_{k})$ is a strictly decreasing (integer) sequence which is
    bounded below by $0$.<br>
    Indeed, if the procedure (of steps A,B,C,D) cannot terminate at $k$, then
-   $$\texttt{sum}(A_{k+1}) = \texttt{sum}(A_{k}) - n^{2}\; h_{k} + n_{k}\; n\; h_{k} = \texttt{sum}(A_{k}) - n (n - n_{k})\; h_{k}$$
+   $$\texttt{sum}(A_{k+1}) = \texttt{sum}(A_{k}) - n^{2}\cdot h_{k} + n_{k}\cdot n\cdot h_{k} = \texttt{sum}(A_{k}) - n\cdot (n - n_{k})\cdot h_{k}$$
 1. (p. 34) Step 2.<br>
     - > "Let $Z_{1}$ denote the $0^{\*}$ in $Z_{0}$'s column (if any)."
       
