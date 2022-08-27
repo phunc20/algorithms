@@ -2,7 +2,11 @@
 
 
 ## Clarifications
+Basically, Munkres approached AP by formulating the problem as **ratings** of pairs of `(man, job)` and tried to maximize
+the sum of assignment.
 1. (p. 33) Step A seems unnecessary because by definition matrix $A$'s smallest element is already $0$: $$x_{i,j} = \max_{p,q} r_{p,q} - r_{i,j}$$
+    - No, it's not redundant! Before step A, entries in matrix $A$ are either $0$ or negative. It is
+      step A which renders them non-negative.
 1. (p. 33) Step B.
     - How is the minimal set $S_1$ defined? I think, it can be defined as follows.<br>
       Since the matrix $A$ is $n$ by $n$, the set of all $2n$ lines is a set (of lines) containing all the zeros.<br>
