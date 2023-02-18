@@ -9,6 +9,17 @@ $ pip install -r requirements.txt
 As usual, better install them in a virtual environment instead of in the system Python of your machine.
 
 
+## How to Use This Directory
+- `comparison.py`: This script compares performances of different algorithms/solutions of linear
+  assignment problem. Here are a few ways to run it:
+  ```
+  # Run default 10x10 rating matrix
+  $ python comparison.py
+  # Run some random 3x3, 5x5, 7x7 rating matrices
+  $ python comparison.py 3 5 7 9
+  ```
+
+
 ## TODO
 `comparison.py`
 1. [ ] Add flag to max/min the problem
