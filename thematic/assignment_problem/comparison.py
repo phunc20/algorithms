@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "n",
         type=int,
         default=10,
-        nargs="?",
+        nargs="*",
         help="number of rows/cols of the cost matrix",
     )
     parser.add_argument(
