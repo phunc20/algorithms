@@ -1,10 +1,19 @@
-## `comparison.py`
+## Environment
+To run `comparison.py`, I used Python3.10.
+
+The required Python packages are listed in `requirements.txt` and could be installed in the command line by
+```bash
+$ pip install -r requirements.txt
+```
+
+As usual, better install them in a virtual environment instead of in the system Python of your machine.
+
+
+## TODO
+`comparison.py`
 1. [ ] Add flag to max/min the problem
-2. [ ] Add solution using PuLP
-2. [ ] 
-
-
-
+1. [x] Add solution using PuLP
+1. [ ] 
 
 
 ## Q&A
