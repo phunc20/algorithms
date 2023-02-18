@@ -11,8 +11,17 @@ from pulp import (
     lpSum,
     GLPK,
 )
-from scipy.optimize import linear_sum_assignment
+from scipy.optimize import linear_sum_assignment as jonker_volgenant
 from tqdm import tqdm
+from _hungarian import linear_sum_assignment as kuhn_munkres
+
+
+# TODO:
+# 1. Change the behavior of this script to allow
+#    non-square matrix input for all of the functions:
+#    brute_force, pulp_way, etc.
+#    Default: square matrix, allow non-square
+# 2. Prettier formated printing
 
 
 def brute_force(cost):
@@ -77,10 +86,10 @@ def do_even_less_loop(cost):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-n",
+        "n",
         type=int,
         default=10,
-        nargs="+",
+        nargs="?",
         help="number of rows/cols of the cost matrix",
     )
     parser.add_argument(
@@ -107,46 +116,82 @@ if __name__ == "__main__":
         print()
 
         if not deactivate:
-            start = time.time()
-            best_perm = brute_force(cost)
-            end = time.time()
-            #print(f"Brute force took {end-start:.9f} sec.")
-            print(f"Brute force           took {end-start:.9f} sec, i.e. {(end-start)*10**6:,.0f} ms")
+            start = time.perf_counter()
+            brute_force_perm = brute_force(cost)
+            end = time.perf_counter()
+            duration = end - start
+            sec_str = f"{duration:.9f}"
+            ms_str = f"{(duration)*10**6:,.0f}"
+            n_char_sec = len(sec_str)
+            n_char_ms = len(ms_str)
+            #width_sec = len(str(int(duration)))
+            #print(f"Brute force      took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
+            print(f"Brute force      took {sec_str} sec, i.e. {ms_str} ms")
+
             # convert to np.array for easier visual comparison
-            #print(f"best_perm = {best_perm}")
-            print(f"best_perm =  {np.array(best_perm)}")
-            print(f"sum = {cost[range(cost.shape[0]), best_perm].sum()}")
+            #print(f"brute_force_perm = {brute_force_perm}")
+            print(f"brute_force_perm =  {np.array(brute_force_perm)}")
+            print(f"max_rating_sum = {cost[range(cost.shape[0]), brute_force_perm].sum()}")
             print()
 
-        start = time.time()
-        _, scipy_perm = linear_sum_assignment(cost, maximize=True)
-        end = time.time()
-        print(f"linear_sum_assignment took {end-start:.9f} sec, i.e. {(end-start)*10**6:,.0f} ms")
-        print(f"scipy_perm = {scipy_perm}")
-        print(f"sum = {cost[range(cost.shape[0]), scipy_perm].sum()}")
-        print()
-
-        start = time.time()
+        start = time.perf_counter()
         pulp_perm = pulp_way(cost)
-        end = time.time()
-        print(f"pulp_way              took {end-start:.9f} sec, i.e. {(end-start)*10**6:,.0f} ms")
-        print(f"pulp_perm = {np.array(pulp_perm)}")
-        print(f"sum = {cost[range(cost.shape[0]), pulp_perm].sum()}")
+        end = time.perf_counter()
+        duration = end - start
+        sec_str = f"{duration:.9f}"
+        ms_str = f"{(duration)*10**6:,.0f}"
+        if deactivate:
+            n_char_sec = len(sec_str)
+            n_char_ms = len(ms_str)
+            #width_sec = len(str(int(duration)))
+
+        #print(f"pulp_way         took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
+        print(f"pulp_way         took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        print(f"pulp_perm =  {np.array(pulp_perm)}")
+        print(f"max_rating_sum = {cost[range(cost.shape[0]), pulp_perm].sum()}")
         print()
 
+        start = time.perf_counter()
+        # We need to add a negative sign because
+        # _hungarian.py computes the min cost of a cost matrix
+        # instead of the max rating sum of a rating matrix
+        row_ind, col_ind = kuhn_munkres(-cost)
+        end = time.perf_counter()
+        duration = end - start
+        sec_str = f"{duration:.9f}"
+        ms_str = f"{(duration)*10**6:,.0f}"
+        #print(f"kuhn_munkres     took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
+        print(f"kuhn_munkres     took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        #print(f"{row_ind = }")
+        #print(f"{col_ind = }")
+        print(f"kuhn_munkres_perm = {col_ind}")
+        print(f"max_rating_sum = {cost[row_ind, col_ind].sum()}")
+        print()
+
+        start = time.perf_counter()
+        _, scipy_perm = jonker_volgenant(cost, maximize=True)
+        end = time.perf_counter()
+        duration = end - start
+        sec_str = f"{duration:.9f}"
+        ms_str = f"{(duration)*10**6:,.0f}"
+        #print(f"jonker_volgenant took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
+        print(f"jonker_volgenant took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        print(f"scipy_perm = {scipy_perm}")
+        print(f"max_rating_sum = {cost[range(cost.shape[0]), scipy_perm].sum()}")
+        print()
 
         if show_more:
-            start = time.time()
+            start = time.perf_counter()
             do_nothing_loop(cost)
-            end = time.time()
+            end = time.perf_counter()
             print(f"do_nothing_loop() took {end-start:.2f} sec.")
             print()
 
         # TODO: debug
         # OverflowError: Python int too large to convert to C ssize_t
         if show_more:
-            start = time.time()
+            start = time.perf_counter()
             do_even_less_loop(cost)
-            end = time.time()
+            end = time.perf_counter()
             print(f"do_even_less_loop() took {end-start:.2f} sec.")
             print()
