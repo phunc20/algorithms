@@ -83,20 +83,26 @@ def do_even_less_loop(cost):
         pass
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "n",
         type=int,
         default=10,
         nargs="*",
-        help="number of rows/cols of the cost matrix",
+        help="number of rows/cols of the rating/cost matrix",
     )
     parser.add_argument(
         "-d",
         "--deactivate",
         action="store_true",
         help="deactivate brute_force()",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="seed for the random rating/cost matrix",
     )
     parser.add_argument(
         "--show_more",
@@ -108,14 +114,17 @@ if __name__ == "__main__":
     print(f"args.n = {args.n}")
     n = args.n if isinstance(args.n, list) else [args.n]
     show_more = args.show_more
+    seed = args.seed
 
     for k in n:
-        rng = np.random.default_rng(seed=42)
-        cost = rng.integers(low=1, high=10, size=(k,k))
+        rng = np.random.default_rng(seed=seed)
+        #cost = rng.integers(low=1, high=10, size=(k,k))
+        cost = rng.integers(low=-2**20, high=2**20, size=(k,k))
         print(f"{k}-by-{k} cost = \n{cost}")
         print()
 
         if not deactivate:
+            print("Brute Force:")
             start = time.perf_counter()
             brute_force_perm = brute_force(cost)
             end = time.perf_counter()
@@ -126,7 +135,7 @@ if __name__ == "__main__":
             n_char_ms = len(ms_str)
             #width_sec = len(str(int(duration)))
             #print(f"Brute force      took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-            print(f"Brute force      took {sec_str} sec, i.e. {ms_str} ms")
+            print(f"took {sec_str} sec, i.e. {ms_str} ms")
 
             # convert to np.array for easier visual comparison
             #print(f"brute_force_perm = {brute_force_perm}")
@@ -134,6 +143,7 @@ if __name__ == "__main__":
             print(f"max_rating_sum = {cost[range(cost.shape[0]), brute_force_perm].sum()}")
             print()
 
+        print("PuLP:")
         start = time.perf_counter()
         pulp_perm = pulp_way(cost)
         end = time.perf_counter()
@@ -146,11 +156,12 @@ if __name__ == "__main__":
             #width_sec = len(str(int(duration)))
 
         #print(f"pulp_way         took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-        print(f"pulp_way         took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
         print(f"pulp_perm =  {np.array(pulp_perm)}")
         print(f"max_rating_sum = {cost[range(cost.shape[0]), pulp_perm].sum()}")
         print()
 
+        print("Hungarian:")
         start = time.perf_counter()
         # We need to add a negative sign because
         # _hungarian.py computes the min cost of a cost matrix
@@ -161,13 +172,14 @@ if __name__ == "__main__":
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
         #print(f"kuhn_munkres     took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-        print(f"kuhn_munkres     took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
         #print(f"{row_ind = }")
         #print(f"{col_ind = }")
         print(f"kuhn_munkres_perm = {col_ind}")
         print(f"max_rating_sum = {cost[row_ind, col_ind].sum()}")
         print()
 
+        print("Jonker-Volgenant:")
         start = time.perf_counter()
         _, scipy_perm = jonker_volgenant(cost, maximize=True)
         end = time.perf_counter()
@@ -175,7 +187,7 @@ if __name__ == "__main__":
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
         #print(f"jonker_volgenant took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-        print(f"jonker_volgenant took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
         print(f"scipy_perm = {scipy_perm}")
         print(f"max_rating_sum = {cost[range(cost.shape[0]), scipy_perm].sum()}")
         print()
@@ -195,3 +207,7 @@ if __name__ == "__main__":
             end = time.perf_counter()
             print(f"do_even_less_loop() took {end-start:.2f} sec.")
             print()
+
+
+if __name__ == "__main__":
+    main()

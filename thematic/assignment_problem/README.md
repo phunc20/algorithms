@@ -33,9 +33,10 @@ As usual, better install them in a virtual environment instead of in the system 
    effort, we end up with a solution with the same worst-case complexity of $O(n!)$.
 
 
-
-
-
+## Refs
+1. <https://math.mit.edu/~goemans/18433S09/matching-notes.pdf>
+    - <http://www.lix.polytechnique.fr/~ollivier/JACOBI/bibliographie.html>
+    - <http://www.lix.polytechnique.fr/~ollivier/Borne_Jacobi_I/>
 
 
 
