@@ -27,6 +27,7 @@ As usual, better install them in a virtual environment instead of in the system 
 1. [ ] [NetworkX's bipartite graph](https://networkx.org/documentation/stable/reference/algorithms/bipartite.html#module-networkx.algorithms.bipartite.matching)
     - <https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.bipartite.matching.minimum_weight_full_matching.html#networkx.algorithms.bipartite.matching.minimum_weight_full_matching>
     - defers to SciPY: <https://networkx.org/documentation/stable/_modules/networkx/algorithms/bipartite/matching.html#minimum_weight_full_matching>
+    - <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.maximum_bipartite_matching.html>
 
 
 ## Q&A
