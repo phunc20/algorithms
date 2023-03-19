@@ -37,9 +37,13 @@ As usual, better install them in a virtual environment instead of in the system 
 
 
 ## Refs
-1. <https://math.mit.edu/~goemans/18433S09/matching-notes.pdf>
+1. Jacobi
     - <http://www.lix.polytechnique.fr/~ollivier/JACOBI/bibliographie.html>
     - <http://www.lix.polytechnique.fr/~ollivier/Borne_Jacobi_I/>
-
-
-
+2. Optimal Control
+    - [POT](https://github.com/PythonOT/POT)
+        - <https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html#sphx-glr-auto-examples-plot-ot-2d-samples-py>
+        - <https://pythonot.github.io/auto_examples/plot_Intro_OT.html#sphx-glr-auto-examples-plot-intro-ot-py>
+3. Integer Programming
+    - <https://realpython.com/linear-programming-python/>
+    - <https://math.mit.edu/~goemans/18433S09/matching-notes.pdf>
