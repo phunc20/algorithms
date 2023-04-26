@@ -8,6 +8,7 @@ from pulp import (
     LpProblem,
     LpVariable,
     LpMaximize,
+    LpMinimize,
     lpSum,
     GLPK,
 )
@@ -17,29 +18,34 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 
 
 # TODO:
-# 1. Change the behavior of this script to allow
+# 1. [ ] Change the behavior of this script to allow
 #    non-square matrix input for all of the functions:
 #    brute_force, pulp_way, etc.
 #    Default: square matrix, allow non-square
-# 2. Prettier formated printing
+# 2. [ ] Allow minimization as well as maximization
+# 3. [ ] Prettier formated printing
 
 
-def brute_force(cost):
-    k = cost.shape[0]
-    maximum = -np.inf
-    #for perm in permutations(range(k)):
+def brute_force(R, minimize: bool = False):
+    k = R.shape[0]
+    extremum = np.inf if minimize else -np.inf
     for perm in tqdm(permutations(range(k)), total=np.math.factorial(k)):
-        #import ipdb; ipdb.set_trace()
-        somme = cost[range(k), perm].sum()
-        if somme >= maximum:
-            maximum = somme
-            best_perm = perm
+        somme = R[range(k), perm].sum()
+        if minimize:
+            if somme <= extremum:
+                extremum = somme
+                best_perm = perm
+        else:
+            if somme >= extremum:
+                extremum = somme
+                best_perm = perm
     return best_perm
 
 
-def pulp_way(cost, *, verbose=False, solver=GLPK, debug=False):
-    m, n = cost.shape
-    model = LpProblem(name="linear-assignment", sense=LpMaximize)
+def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
+    m, n = R.shape
+    sense = LpMinimize if minimize else LpMaximize
+    model = LpProblem(name="linear-assignment", sense=sense)
     X = []
     for i in range(m):
         X.append([])
@@ -53,7 +59,7 @@ def pulp_way(cost, *, verbose=False, solver=GLPK, debug=False):
     for j in range(n):
         model += (lpSum(X[i][j] for i in range(m)) == 1, f"col_{j}_sum")
     obj_func = lpSum(
-        cost[i,j]*X[i][j] for i in range(m) for j in range(n)
+        R[i,j]*X[i][j] for i in range(m) for j in range(n)
     )
     model += obj_func
     status = model.solve(solver=solver(msg=False))
@@ -70,16 +76,16 @@ def pulp_way(cost, *, verbose=False, solver=GLPK, debug=False):
     return perm
 
 
-def do_nothing_loop(cost):
-    k = cost.shape[0]
+def do_nothing_loop(R):
+    k = R.shape[0]
     for _ in tqdm(permutations(range(k)), total=np.math.factorial(k)):
         pass
 
 
-def do_even_less_loop(cost):
-    k = cost.shape[0]
-    #for _ in tqdm(range(math.factorial(k))):
-    for _ in tqdm(range(np.math.factorial(k)), total=np.math.factorial(k)):
+def do_even_less_loop(R):
+    k = R.shape[0]
+    k_factorial = np.math.factorial(k)
+    for _ in tqdm(range(k_factorial), total=k_factorial):
         pass
 
 
@@ -93,10 +99,20 @@ def main():
         help="number of rows/cols of the rating/cost matrix",
     )
     parser.add_argument(
-        "-d",
-        "--deactivate",
+        "--rows",
+        type=int,
+        default=10,
+        help="(# rows) of the rating/cost matrix",
+    )
+    parser.add_argument(
+        "--cols",
+        type=int,
+        help="(# cols) of the rating/cost matrix",
+    )
+    parser.add_argument(
+        "--no_brute_force",
         action="store_true",
-        help="deactivate brute_force()",
+        help="Whether or not to run brute_force()",
     )
     parser.add_argument(
         "--seed",
@@ -109,24 +125,32 @@ def main():
         action="store_true",
         help="show do_nothing_loop() and do_even_less_loop()",
     )
+    parser.add_argument(
+        "--minimize",
+        default=False,
+        action="store_true",
+        help="Either to maximize (rating sum) or to minimize (cost sum)",
+    )
     args = parser.parse_args()
-    deactivate = args.deactivate
     print(f"args.n = {args.n}")
+    #import ipdb; ipdb.set_trace()
     n = args.n if isinstance(args.n, list) else [args.n]
-    show_more = args.show_more
     seed = args.seed
+    sum_name = "min_cost_sum" if args.minimize else "max_rating_sum"
+    perm_name_decalage = 21
 
     for k in n:
         rng = np.random.default_rng(seed=seed)
-        #cost = rng.integers(low=1, high=10, size=(k,k))
-        cost = rng.integers(low=-2**20, high=2**20, size=(k,k))
-        print(f"{k}-by-{k} cost = \n{cost}")
+        R = rng.integers(low=1, high=10, size=(k,k))
+        #R = rng.integers(low=-2**20, high=2**20, size=(k,k))
+        print(f"{k}-by-{k} R = \n{R}")
         print()
 
-        if not deactivate:
+        if not args.no_brute_force:
             print("Brute Force:")
+            perm_name = "brute_force_perm"
             start = time.perf_counter()
-            brute_force_perm = brute_force(cost)
+            brute_force_perm = brute_force(R, minimize=args.minimize)
             end = time.perf_counter()
             duration = end - start
             sec_str = f"{duration:.9f}"
@@ -139,26 +163,31 @@ def main():
 
             # convert to np.array for easier visual comparison
             #print(f"brute_force_perm = {brute_force_perm}")
-            print(f"brute_force_perm =  {np.array(brute_force_perm)}")
-            print(f"max_rating_sum = {cost[range(cost.shape[0]), brute_force_perm].sum()}")
+            print(f"{perm_name:<{perm_name_decalage}} =  {np.array(brute_force_perm)}")
+            print(f"{sum_name} = {R[range(R.shape[0]), brute_force_perm].sum()}")
             print()
 
         print("PuLP:")
+        perm_name = "pulp_perm"
         start = time.perf_counter()
-        pulp_perm = pulp_way(cost)
+        # TODO: Other solvers than GLPK?
+        pulp_perm = pulp_way(
+            R,
+            minimize=args.minimize,
+            solver=GLPK,
+            debug=False,
+        )
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
-        if deactivate:
+        if args.no_brute_force:
             n_char_sec = len(sec_str)
             n_char_ms = len(ms_str)
-            #width_sec = len(str(int(duration)))
 
-        #print(f"pulp_way         took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
-        print(f"pulp_perm =  {np.array(pulp_perm)}")
-        print(f"max_rating_sum = {cost[range(cost.shape[0]), pulp_perm].sum()}")
+        print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
+        print(f'{perm_name:<{perm_name_decalage}} =  {np.array(pulp_perm)}')
+        print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
         print()
 
         print("Hungarian:")
@@ -166,7 +195,7 @@ def main():
         # We need to add a negative sign because
         # _hungarian.py computes the min cost of a cost matrix
         # instead of the max rating sum of a rating matrix
-        row_ind, col_ind = kuhn_munkres(-cost)
+        row_ind, col_ind = kuhn_munkres(-R)
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
@@ -176,36 +205,44 @@ def main():
         #print(f"{row_ind = }")
         #print(f"{col_ind = }")
         print(f"kuhn_munkres_perm = {col_ind}")
-        print(f"max_rating_sum = {cost[row_ind, col_ind].sum()}")
+        print(f"max_rating_sum = {R[row_ind, col_ind].sum()}")
         print()
 
         print("Jonker-Volgenant:")
         start = time.perf_counter()
-        _, scipy_perm = jonker_volgenant(cost, maximize=True)
+        _, jonker_volgenant_perm = jonker_volgenant(R, maximize=True)
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
         #print(f"jonker_volgenant took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
         print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
-        print(f"scipy_perm = {scipy_perm}")
-        print(f"max_rating_sum = {cost[range(cost.shape[0]), scipy_perm].sum()}")
+        print(f"jonker_volgenant_perm = {jonker_volgenant_perm}")
+        print(f"max_rating_sum = {R[range(R.shape[0]), jonker_volgenant_perm].sum()}")
         print()
 
-        if show_more:
+        if args.show_more:
+            print("do_nothing_loop:")
             start = time.perf_counter()
-            do_nothing_loop(cost)
+            do_nothing_loop(R)
             end = time.perf_counter()
-            print(f"do_nothing_loop() took {end-start:.2f} sec.")
+            duration = end - start
+            sec_str = f"{duration:.9f}"
+            ms_str = f"{(duration)*10**6:,.0f}"
+            print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
             print()
 
         # TODO: debug
         # OverflowError: Python int too large to convert to C ssize_t
-        if show_more:
+        if args.show_more:
+            print(f"do_even_less_loop:")
             start = time.perf_counter()
-            do_even_less_loop(cost)
+            do_even_less_loop(R)
             end = time.perf_counter()
-            print(f"do_even_less_loop() took {end-start:.2f} sec.")
+            duration = end - start
+            sec_str = f"{duration:.9f}"
+            ms_str = f"{(duration)*10**6:,.0f}"
+            print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
             print()
 
 

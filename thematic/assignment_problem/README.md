@@ -1,5 +1,6 @@
 ## Environment
-To run `comparison.py`, I used Python3.10.
+To run `comparison.py`, I used Python3.10. Nevertheless, I think that all
+Python3.8+ will work as well.
 
 The required Python packages are listed in `requirements.txt` and could be installed in the command line by
 ```bash
