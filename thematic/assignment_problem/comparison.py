@@ -26,20 +26,45 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 # 3. [ ] Prettier formated printing
 
 
-def brute_force(R, minimize: bool = False):
+#def brute_force(R: np.ndarray, minimize: bool = False):
+#    k = R.shape[0]
+#    extremum = np.inf if minimize else -np.inf
+#    #for perm in tqdm(permutations(range(k)), total=np.math.factorial(k)):
+#    for perm in permutations(range(k)):
+#        somme = R[range(k), perm].sum()
+#        if minimize:
+#            if somme <= extremum:
+#                extremum = somme
+#                best_perm = perm
+#        else:
+#            if somme >= extremum:
+#                extremum = somme
+#                best_perm = perm
+#    return best_perm
+
+
+def do_nothing_bar(*args, **kargs):
+    return args[0]
+
+
+def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
     k = R.shape[0]
-    extremum = np.inf if minimize else -np.inf
-    for perm in tqdm(permutations(range(k)), total=np.math.factorial(k)):
+    maximum = -np.inf
+    #bar = tqdm if verbose else (lambda iterator, total: iterator)
+    bar = tqdm if verbose else do_nothing_bar
+    for perm in bar(permutations(range(k)), total=np.math.factorial(k)):
         somme = R[range(k), perm].sum()
-        if minimize:
-            if somme <= extremum:
-                extremum = somme
-                best_perm = perm
-        else:
-            if somme >= extremum:
-                extremum = somme
-                best_perm = perm
+        if somme >= maximum:
+            maximum = somme
+            best_perm = perm
     return best_perm
+
+
+def brute_force(R: np.ndarray, *args, verbose: bool = False, minimize: bool = False):
+    if minimize:
+        return brute_force_max(-R, verbose=verbose)
+    else:
+        return brute_force_max(R, verbose=verbose)
 
 
 def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
@@ -150,7 +175,11 @@ def main():
             print("Brute Force:")
             perm_name = "brute_force_perm"
             start = time.perf_counter()
-            brute_force_perm = brute_force(R, minimize=args.minimize)
+            brute_force_perm = brute_force(
+                R,
+                verbose=True,
+                minimize=args.minimize,
+            )
             end = time.perf_counter()
             duration = end - start
             sec_str = f"{duration:.9f}"
