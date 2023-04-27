@@ -24,6 +24,7 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 #    Default: square matrix, allow non-square
 # 2. [ ] Allow minimization as well as maximization
 # 3. [ ] Prettier formated printing
+# 4. [ ] real-number linear programming solution, i.e. sth diff from pulp
 
 
 #def brute_force(R: np.ndarray, minimize: bool = False):
@@ -192,7 +193,7 @@ def main():
 
             # convert to np.array for easier visual comparison
             #print(f"brute_force_perm = {brute_force_perm}")
-            print(f"{perm_name:<{perm_name_decalage}} =  {np.array(brute_force_perm)}")
+            print(f"{perm_name:<{perm_name_decalage}} = {np.array(brute_force_perm)}")
             print(f"{sum_name} = {R[range(R.shape[0]), brute_force_perm].sum()}")
             print()
 
@@ -215,39 +216,42 @@ def main():
             n_char_ms = len(ms_str)
 
         print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-        print(f'{perm_name:<{perm_name_decalage}} =  {np.array(pulp_perm)}')
+        print(f'{perm_name:<{perm_name_decalage}} = {np.array(pulp_perm)}')
         print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
         print()
 
         print("Hungarian:")
+        perm_name = "kuhn_munkres_perm "
         start = time.perf_counter()
         # We need to add a negative sign because
         # _hungarian.py computes the min cost of a cost matrix
         # instead of the max rating sum of a rating matrix
-        row_ind, col_ind = kuhn_munkres(-R)
+        if args.minimize:
+            row_ind, col_ind = kuhn_munkres(R)
+        else:
+            row_ind, col_ind = kuhn_munkres(-R)
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
-        #print(f"kuhn_munkres     took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
         print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
         #print(f"{row_ind = }")
         #print(f"{col_ind = }")
-        print(f"kuhn_munkres_perm = {col_ind}")
-        print(f"max_rating_sum = {R[row_ind, col_ind].sum()}")
+        print(f"{perm_name:<{perm_name_decalage}} = {col_ind}")
+        print(f"{sum_name} = {R[row_ind, col_ind].sum()}")
         print()
 
         print("Jonker-Volgenant:")
+        perm_name = "jonker_volgenant_perm"
         start = time.perf_counter()
-        _, jonker_volgenant_perm = jonker_volgenant(R, maximize=True)
+        _, jonker_volgenant_perm = jonker_volgenant(R, maximize=not args.minimize)
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
-        #print(f"jonker_volgenant took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
         print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
-        print(f"jonker_volgenant_perm = {jonker_volgenant_perm}")
-        print(f"max_rating_sum = {R[range(R.shape[0]), jonker_volgenant_perm].sum()}")
+        print(f"{perm_name:<{perm_name_decalage}} = {jonker_volgenant_perm}")
+        print(f"{sum_name} = {R[range(R.shape[0]), jonker_volgenant_perm].sum()}")
         print()
 
         if args.show_more:
