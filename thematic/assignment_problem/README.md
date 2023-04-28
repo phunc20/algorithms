@@ -9,6 +9,24 @@ $ pip install -r requirements.txt
 
 As usual, better install them in a virtual environment instead of in the system Python of your machine.
 
+**Rmk.** Specifically, we make use of
+[GLPK (GNU Linear Programming Kit)](https://www.gnu.org/software/glpk/),
+which requires installing GLPK on your machine:
+- Linux: Use your Linux distro's package manager, e.g.
+  ```sh
+  # For Arch Linux
+  $ pacman -S glpk
+  ```
+- MacOS
+  ```sh
+  # Homebrew
+  $ brew install glpk
+  ```
+- Windows: I'm not a Windows user, but it seems that one may download and install
+  from
+    - Either <https://winglpk.sourceforge.net/>
+    - Or <https://sourceforge.net/projects/winglpk/>
+
 
 ## How to Use This Directory
 - `comparison.py`: This script compares performances of different algorithms/solutions of linear

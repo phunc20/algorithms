@@ -22,26 +22,9 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 #    non-square matrix input for all of the functions:
 #    brute_force, pulp_way, etc.
 #    Default: square matrix, allow non-square
-# 2. [ ] Allow minimization as well as maximization
-# 3. [ ] Prettier formated printing
+# 2. [x] Allow minimization as well as maximization
+# 3. [x] Prettier formated printing
 # 4. [ ] real-number linear programming solution, i.e. sth diff from pulp
-
-
-#def brute_force(R: np.ndarray, minimize: bool = False):
-#    k = R.shape[0]
-#    extremum = np.inf if minimize else -np.inf
-#    #for perm in tqdm(permutations(range(k)), total=np.math.factorial(k)):
-#    for perm in permutations(range(k)):
-#        somme = R[range(k), perm].sum()
-#        if minimize:
-#            if somme <= extremum:
-#                extremum = somme
-#                best_perm = perm
-#        else:
-#            if somme >= extremum:
-#                extremum = somme
-#                best_perm = perm
-#    return best_perm
 
 
 def do_nothing_bar(*args, **kargs):
@@ -125,12 +108,14 @@ def main():
         help="number of rows/cols of the rating/cost matrix",
     )
     parser.add_argument(
+        "-m",
         "--rows",
         type=int,
         default=10,
         help="(# rows) of the rating/cost matrix",
     )
     parser.add_argument(
+        "-n",
         "--cols",
         type=int,
         help="(# cols) of the rating/cost matrix",
@@ -159,124 +144,152 @@ def main():
     )
     args = parser.parse_args()
     print(f"args.n = {args.n}")
-    #import ipdb; ipdb.set_trace()
     n = args.n if isinstance(args.n, list) else [args.n]
     seed = args.seed
     sum_name = "min_cost_sum" if args.minimize else "max_rating_sum"
     perm_name_decalage = 21
 
-    for k in n:
-        rng = np.random.default_rng(seed=seed)
-        R = rng.integers(low=1, high=10, size=(k,k))
-        #R = rng.integers(low=-2**20, high=2**20, size=(k,k))
-        print(f"{k}-by-{k} R = \n{R}")
-        print()
+    if not isinstance(args.rows, int):
+        print(
+            f'{args.rows = } is of invalid type {type(args.rows)}. '
+            "Please specify --rows with a positive integer."
+        )
+        return
+    elif args.rows <= 0:
+        print(
+            f'{args.rows = } is non-positive.'
+            "Please specify --rows with a positive integer."
+        )
+        return
+    if not isinstance(args.cols, int):
+        args.cols = args.rows
+    m, n = args.rows, args.cols
+    rng = np.random.default_rng(seed=seed)
+    R = rng.integers(low=1, high=10, size=(m,n))
+    #R = rng.integers(low=-2**20, high=2**20, size=(k,k))
+    print(f"{m}-by-{n} R = \n{R}")
+    print()
 
-        if not args.no_brute_force:
-            print("Brute Force:")
-            perm_name = "brute_force_perm"
-            start = time.perf_counter()
-            brute_force_perm = brute_force(
-                R,
-                verbose=True,
-                minimize=args.minimize,
-            )
-            end = time.perf_counter()
-            duration = end - start
-            sec_str = f"{duration:.9f}"
-            ms_str = f"{(duration)*10**6:,.0f}"
-            n_char_sec = len(sec_str)
-            n_char_ms = len(ms_str)
-            #width_sec = len(str(int(duration)))
-            #print(f"Brute force      took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
-            print(f"took {sec_str} sec, i.e. {ms_str} ms")
-
-            # convert to np.array for easier visual comparison
-            #print(f"brute_force_perm = {brute_force_perm}")
-            print(f"{perm_name:<{perm_name_decalage}} = {np.array(brute_force_perm)}")
-            print(f"{sum_name} = {R[range(R.shape[0]), brute_force_perm].sum()}")
-            print()
-
-        print("PuLP:")
-        perm_name = "pulp_perm"
+    if not args.no_brute_force:
+        print("Brute Force:")
+        perm_name = "brute_force_perm"
         start = time.perf_counter()
-        # TODO: Other solvers than GLPK?
-        pulp_perm = pulp_way(
+        brute_force_perm = brute_force(
             R,
+            verbose=True,
             minimize=args.minimize,
-            solver=GLPK,
-            debug=False,
         )
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
-        if args.no_brute_force:
-            n_char_sec = len(sec_str)
-            n_char_ms = len(ms_str)
+        n_char_sec = len(sec_str)
+        n_char_ms = len(ms_str)
+        #width_sec = len(str(int(duration)))
+        #print(f"Brute force      took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
+        print(f"took {sec_str} sec, i.e. {ms_str} ms")
 
-        print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-        print(f'{perm_name:<{perm_name_decalage}} = {np.array(pulp_perm)}')
-        print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
+        # convert to np.array for easier visual comparison
+        #print(f"brute_force_perm = {brute_force_perm}")
+        print(f"{perm_name:<{perm_name_decalage}} = {np.array(brute_force_perm)}")
+        print(f"{sum_name} = {R[range(R.shape[0]), brute_force_perm].sum()}")
         print()
 
-        print("Hungarian:")
-        perm_name = "kuhn_munkres_perm "
-        start = time.perf_counter()
-        # We need to add a negative sign because
-        # _hungarian.py computes the min cost of a cost matrix
-        # instead of the max rating sum of a rating matrix
-        if args.minimize:
-            row_ind, col_ind = kuhn_munkres(R)
+    #print("PuLP:")
+    #perm_name = "pulp_perm"
+    #start = time.perf_counter()
+    ## TODO: Other solvers than GLPK?
+    #pulp_perm = pulp_way(
+    #    R,
+    #    minimize=args.minimize,
+    #    solver=GLPK,
+    #    debug=False,
+    #)
+    #end = time.perf_counter()
+    #duration = end - start
+    #sec_str = f"{duration:.9f}"
+    #ms_str = f"{(duration)*10**6:,.0f}"
+    #if args.no_brute_force:
+    #    n_char_sec = len(sec_str)
+    #    n_char_ms = len(ms_str)
+
+    #print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
+    #print(f'{perm_name:<{perm_name_decalage}} = {np.array(pulp_perm)}')
+    #print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
+    #print()
+
+    print("Hungarian:")
+    perm_name = "kuhn_munkres_perm "
+    start = time.perf_counter()
+    if args.minimize:
+        row_ind, col_ind = kuhn_munkres(R)
+    else:
+        row_ind, col_ind = kuhn_munkres(-R)
+    end = time.perf_counter()
+    duration = end - start
+    sec_str = f"{duration:.9f}"
+    ms_str = f"{(duration)*10**6:,.0f}"
+    if "n_char_ms" not in locals() or "n_char_ms" not in locals():
+        n_char_sec = len(sec_str)
+        n_char_ms = len(ms_str)
+    print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+    hungarian_assign = list(zip(row_ind, col_ind))
+    print(f"{perm_name:<{perm_name_decalage}} = {hungarian_assign}")
+    print(f"{sum_name} = {R[row_ind, col_ind].sum()}", end="")
+    for i, (row, col) in enumerate(hungarian_assign):
+        v = R[row, col]
+        if i == 0:
+            print(f' = {v}', end="")
         else:
-            row_ind, col_ind = kuhn_munkres(-R)
-        end = time.perf_counter()
-        duration = end - start
-        sec_str = f"{duration:.9f}"
-        ms_str = f"{(duration)*10**6:,.0f}"
-        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
-        #print(f"{row_ind = }")
-        #print(f"{col_ind = }")
-        print(f"{perm_name:<{perm_name_decalage}} = {col_ind}")
-        print(f"{sum_name} = {R[row_ind, col_ind].sum()}")
-        print()
+            print(f' + {v}', end="")
+    print()
 
-        print("Jonker-Volgenant:")
-        perm_name = "jonker_volgenant_perm"
+    print("Jonker-Volgenant:")
+    perm_name = "jonker_volgenant_perm"
+    start = time.perf_counter()
+    row_ind, col_ind = jonker_volgenant(R, maximize=not args.minimize)
+    end = time.perf_counter()
+    duration = end - start
+    sec_str = f"{duration:.9f}"
+    ms_str = f"{(duration)*10**6:,.0f}"
+    if "n_char_ms" not in locals() or "n_char_ms" not in locals():
+        n_char_sec = len(sec_str)
+        n_char_ms = len(ms_str)
+    print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
+    jv_assign = list(zip(row_ind, col_ind))
+    print(f"{perm_name:<{perm_name_decalage}} = {jv_assign}")
+    print(f"{sum_name} = {R[row_ind, col_ind].sum()}", end="")
+    for i, (row, col) in enumerate(jv_assign):
+        v = R[row, col]
+        if i == 0:
+            print(f' = {v}', end="")
+        else:
+            print(f' + {v}', end="")
+    print()
+
+    if args.show_more:
+        print("do_nothing_loop:")
         start = time.perf_counter()
-        _, jonker_volgenant_perm = jonker_volgenant(R, maximize=not args.minimize)
+        do_nothing_loop(R)
         end = time.perf_counter()
         duration = end - start
         sec_str = f"{duration:.9f}"
         ms_str = f"{(duration)*10**6:,.0f}"
-        print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
-        print(f"{perm_name:<{perm_name_decalage}} = {jonker_volgenant_perm}")
-        print(f"{sum_name} = {R[range(R.shape[0]), jonker_volgenant_perm].sum()}")
+        print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
         print()
 
-        if args.show_more:
-            print("do_nothing_loop:")
-            start = time.perf_counter()
-            do_nothing_loop(R)
-            end = time.perf_counter()
-            duration = end - start
-            sec_str = f"{duration:.9f}"
-            ms_str = f"{(duration)*10**6:,.0f}"
-            print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-            print()
-
-        # TODO: debug
-        # OverflowError: Python int too large to convert to C ssize_t
-        if args.show_more:
-            print(f"do_even_less_loop:")
-            start = time.perf_counter()
-            do_even_less_loop(R)
-            end = time.perf_counter()
-            duration = end - start
-            sec_str = f"{duration:.9f}"
-            ms_str = f"{(duration)*10**6:,.0f}"
-            print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-            print()
+    # TODO: debug
+    # OverflowError: Python int too large to convert to C ssize_t
+    if args.show_more:
+        print(f"do_even_less_loop:")
+        start = time.perf_counter()
+        do_even_less_loop(R)
+        end = time.perf_counter()
+        duration = end - start
+        sec_str = f"{duration:.9f}"
+        ms_str = f"{(duration)*10**6:,.0f}"
+        print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
+        print()
 
 
 if __name__ == "__main__":
