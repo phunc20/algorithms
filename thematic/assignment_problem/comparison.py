@@ -1,3 +1,4 @@
+from __future__ import annotations
 import argparse
 from itertools import permutations, combinations
 import math
@@ -28,51 +29,45 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 # 5. [ ] np.int64 integer overflow consideration: Convert all matrices to dtype=float
 
 
-
 def do_nothing_bar(*args, **kargs):
     return args[0]
 
 
-#def square_matrix(M: np.ndarray, missing_value=np.inf) -> np.ndarray:
-#    m, n = M.shape
-#    k = max(m, n)
-#    A = np.ones((k, k), dtype=M.dtype) * missing_value
-#    A[:m, :n] = M
-#    return A
+def brute_force(R: np.ndarray | list, *args, verbose: bool = False, minimize: bool = False):
+    if isinstance(R, list):
+        R = np.array(R)
 
-
-def brute_force_square_max(R: np.ndarray, *args, verbose: bool = False):
-    err_msg = f'R needs to be a square matrix, but got {R.shape = }'
-    try:
-        m, n = R.shape
-    except ValueError:
-        print(err_msg)
-    assert m == n, err_msg
-    maximum = -np.inf
-    R = R.astype(np.float64)
-    #bar = tqdm if verbose else (lambda iterator, total: iterator)
-    bar = tqdm if verbose else do_nothing_bar
-    for perm in bar(permutations(range(m)), total=np.math.factorial(m)):
-        somme = R[range(m), perm].sum()
-        if somme >= maximum:
-            maximum = somme
-            best_perm = perm
-    return best_perm
-
-
-def brute_force(R: np.ndarray, *args, verbose: bool = False, minimize: bool = False):
     if minimize:
         return brute_force_max(-R, verbose=verbose)
     else:
         return brute_force_max(R, verbose=verbose)
 
 
+def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
+    try:
+        m, n = R.shape
+    except AttributeError as e:
+        msg = f"Expect R to be an np.ndarray, but got {type(R) = }"
+        e.args = (msg,)
+        raise e
+    except ValueError as e:
+        msg = f"Expect R to be an np.ndarray with ndim=2, but got {R.shape = }"
+        e.args = (msg,)
+        raise e
+
+    if m <= n:
+        row_ind, col_ind = brute_force_fat_max(R, verbose=verbose)
+    else:
+        col_ind, row_ind = brute_force_fat_max(R.T, verbose=verbose)
+    return row_ind, col_ind
+
+
 def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
     """
-    Def. "fat" iff (R.ndim == 2 and R.shape[1] >= R.shape[0])
+    Def. R is said to be fat iff (R.ndim == 2 and R.shape[1] >= R.shape[0])
     """
     m, n = R.shape
-    assert n > m, f'Got {(m, n) = }'
+    assert n >= m, f'Expect n >= m, but got {(m, n) = }'
     row_ind = tuple(range(m))
 
     # Convert dtype to float to avoid int overflow in NumPy
@@ -89,27 +84,11 @@ def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
     # `permutations` alone could achieve the above double for-loop
     total = np.product(range(n, n-m, -1))
     for col_ind in bar(permutations(range(n), m), total=total):
-        #print(f'{type(col_ind) = }')
-        #import ipdb; ipdb.set_trace()
-        #aaaa = "aaaa"
         somme = R[row_ind, col_ind].sum()
         if somme >= maximum:
             maximum = somme
             best_col_ind = col_ind
     return row_ind, best_col_ind
-
-
-def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
-    err_msg = f'R needs to be an np.ndarray with ndim=2, but got {R.shape = }'
-    try:
-        m, n = R.shape
-    except ValueError:
-        print(err_msg)
-    if m <= n:
-        row_ind, col_ind = brute_force_fat_max(R, verbose=verbose)
-    else:
-        col_ind, row_ind = brute_force_fat_max(R.T, verbose=verbose)
-    return row_ind, col_ind
 
 
 def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
@@ -249,7 +228,14 @@ def main():
         print(f"took {sec_str} sec, i.e. {ms_str} ms")
         bf_assign = list(zip(row_ind, col_ind))
         print(f"{assign_name:<{assign_name_decalage}} = {bf_assign}")
-        print(f"{sum_name} = {R[row_ind, col_ind].sum()}")
+        print(f"{sum_name} = {R[row_ind, col_ind].sum()}", end="")
+        for i, (row, col) in enumerate(bf_assign):
+            v = R[row, col]
+            if i == 0:
+                print(f' = {v}', end="")
+            else:
+                print(f' + {v}', end="")
+        print()
         print()
 
     #print("PuLP:")
