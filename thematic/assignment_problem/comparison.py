@@ -25,19 +25,35 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 # 2. [x] Allow minimization as well as maximization
 # 3. [x] Prettier formated printing
 # 4. [ ] real-number linear programming solution, i.e. sth diff from pulp
+# 5. [ ] np.int64 integer overflow consideration: Convert all matrices to dtype=float
+
 
 
 def do_nothing_bar(*args, **kargs):
     return args[0]
 
 
-def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
-    k = R.shape[0]
+#def square_matrix(M: np.ndarray, missing_value=np.inf) -> np.ndarray:
+#    m, n = M.shape
+#    k = max(m, n)
+#    A = np.ones((k, k), dtype=M.dtype) * missing_value
+#    A[:m, :n] = M
+#    return A
+
+
+def brute_force_square_max(R: np.ndarray, *args, verbose: bool = False):
+    err_msg = f'R needs to be a square matrix, but got {R.shape = }'
+    try:
+        m, n = R.shape
+    except ValueError:
+        print(err_msg)
+    assert m == n, err_msg
     maximum = -np.inf
+    R = R.astype(np.float64)
     #bar = tqdm if verbose else (lambda iterator, total: iterator)
     bar = tqdm if verbose else do_nothing_bar
-    for perm in bar(permutations(range(k)), total=np.math.factorial(k)):
-        somme = R[range(k), perm].sum()
+    for perm in bar(permutations(range(m)), total=np.math.factorial(m)):
+        somme = R[range(m), perm].sum()
         if somme >= maximum:
             maximum = somme
             best_perm = perm
@@ -49,6 +65,51 @@ def brute_force(R: np.ndarray, *args, verbose: bool = False, minimize: bool = Fa
         return brute_force_max(-R, verbose=verbose)
     else:
         return brute_force_max(R, verbose=verbose)
+
+
+def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
+    """
+    Def. "fat" iff (R.ndim == 2 and R.shape[1] >= R.shape[0])
+    """
+    m, n = R.shape
+    assert n > m, f'Got {(m, n) = }'
+    row_ind = tuple(range(m))
+
+    # Convert dtype to float to avoid int overflow in NumPy
+    if not np.issubdtype(R.dtype, np.floating):
+        R = R.astype(np.float64)
+
+    bar = tqdm if verbose else do_nothing_bar
+    maximum = -np.inf
+
+    #for comb in bar(combinations(range(n), m)):
+    #    for perm in permutations(comb):
+    #        pass
+
+    # `permutations` alone could achieve the above double for-loop
+    total = np.product(range(n, n-m, -1))
+    for col_ind in bar(permutations(range(n), m), total=total):
+        #print(f'{type(col_ind) = }')
+        #import ipdb; ipdb.set_trace()
+        #aaaa = "aaaa"
+        somme = R[row_ind, col_ind].sum()
+        if somme >= maximum:
+            maximum = somme
+            best_col_ind = col_ind
+    return row_ind, best_col_ind
+
+
+def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
+    err_msg = f'R needs to be an np.ndarray with ndim=2, but got {R.shape = }'
+    try:
+        m, n = R.shape
+    except ValueError:
+        print(err_msg)
+    if m <= n:
+        row_ind, col_ind = brute_force_fat_max(R, verbose=verbose)
+    else:
+        col_ind, row_ind = brute_force_fat_max(R.T, verbose=verbose)
+    return row_ind, col_ind
 
 
 def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
@@ -147,7 +208,7 @@ def main():
     n = args.n if isinstance(args.n, list) else [args.n]
     seed = args.seed
     sum_name = "min_cost_sum" if args.minimize else "max_rating_sum"
-    perm_name_decalage = 21
+    assign_name_decalage = len("jonker_volgenant_assign")
 
     if not isinstance(args.rows, int):
         print(
@@ -172,9 +233,9 @@ def main():
 
     if not args.no_brute_force:
         print("Brute Force:")
-        perm_name = "brute_force_perm"
+        assign_name = "brute_force_assign"
         start = time.perf_counter()
-        brute_force_perm = brute_force(
+        row_ind, col_ind = brute_force(
             R,
             verbose=True,
             minimize=args.minimize,
@@ -185,18 +246,14 @@ def main():
         ms_str = f"{(duration)*10**6:,.0f}"
         n_char_sec = len(sec_str)
         n_char_ms = len(ms_str)
-        #width_sec = len(str(int(duration)))
-        #print(f"Brute force      took {duration: {width_sec}.9f} sec, i.e. {(duration)*10**6:,.0f} ms")
         print(f"took {sec_str} sec, i.e. {ms_str} ms")
-
-        # convert to np.array for easier visual comparison
-        #print(f"brute_force_perm = {brute_force_perm}")
-        print(f"{perm_name:<{perm_name_decalage}} = {np.array(brute_force_perm)}")
-        print(f"{sum_name} = {R[range(R.shape[0]), brute_force_perm].sum()}")
+        bf_assign = list(zip(row_ind, col_ind))
+        print(f"{assign_name:<{assign_name_decalage}} = {bf_assign}")
+        print(f"{sum_name} = {R[row_ind, col_ind].sum()}")
         print()
 
     #print("PuLP:")
-    #perm_name = "pulp_perm"
+    #assign_name = "pulp_assign"
     #start = time.perf_counter()
     ## TODO: Other solvers than GLPK?
     #pulp_perm = pulp_way(
@@ -214,12 +271,12 @@ def main():
     #    n_char_ms = len(ms_str)
 
     #print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-    #print(f'{perm_name:<{perm_name_decalage}} = {np.array(pulp_perm)}')
+    #print(f'{assign_name:<{assign_name_decalage}} = {np.array(pulp_perm)}')
     #print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
     #print()
 
     print("Hungarian:")
-    perm_name = "kuhn_munkres_perm "
+    assign_name = "kuhn_munkres_assign "
     start = time.perf_counter()
     if args.minimize:
         row_ind, col_ind = kuhn_munkres(R)
@@ -234,7 +291,7 @@ def main():
         n_char_ms = len(ms_str)
     print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
     hungarian_assign = list(zip(row_ind, col_ind))
-    print(f"{perm_name:<{perm_name_decalage}} = {hungarian_assign}")
+    print(f"{assign_name:<{assign_name_decalage}} = {hungarian_assign}")
     print(f"{sum_name} = {R[row_ind, col_ind].sum()}", end="")
     for i, (row, col) in enumerate(hungarian_assign):
         v = R[row, col]
@@ -243,9 +300,10 @@ def main():
         else:
             print(f' + {v}', end="")
     print()
+    print()
 
     print("Jonker-Volgenant:")
-    perm_name = "jonker_volgenant_perm"
+    assign_name = "jonker_volgenant_assign"
     start = time.perf_counter()
     row_ind, col_ind = jonker_volgenant(R, maximize=not args.minimize)
     end = time.perf_counter()
@@ -257,7 +315,7 @@ def main():
         n_char_ms = len(ms_str)
     print(f"took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms")
     jv_assign = list(zip(row_ind, col_ind))
-    print(f"{perm_name:<{perm_name_decalage}} = {jv_assign}")
+    print(f"{assign_name:<{assign_name_decalage}} = {jv_assign}")
     print(f"{sum_name} = {R[row_ind, col_ind].sum()}", end="")
     for i, (row, col) in enumerate(jv_assign):
         v = R[row, col]
@@ -265,6 +323,7 @@ def main():
             print(f' = {v}', end="")
         else:
             print(f' + {v}', end="")
+    print()
     print()
 
     if args.show_more:
