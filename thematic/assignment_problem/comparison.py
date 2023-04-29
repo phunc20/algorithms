@@ -25,7 +25,7 @@ from _hungarian import linear_sum_assignment as kuhn_munkres
 #    Default: square matrix, allow non-square
 # 2. [x] Allow minimization as well as maximization
 # 3. [x] Prettier formated printing
-# 4. [ ] real-number linear programming solution, i.e. sth diff from pulp
+# 4. [ ] real-number linear programming solution, i.e. sth diff from pulp, e.g. scipy
 # 5. [ ] np.int64 integer overflow consideration: Convert all matrices to dtype=float
 
 
