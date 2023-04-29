@@ -44,6 +44,15 @@ def brute_force(R: np.ndarray | list, *args, verbose: bool = False, minimize: bo
 
 
 def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
+    m, n = get_matrix_shape(R)
+    if m <= n:
+        row_ind, col_ind = brute_force_fat_max(R, verbose=verbose)
+    else:
+        col_ind, row_ind = brute_force_fat_max(R.T, verbose=verbose)
+    return row_ind, col_ind
+
+
+def get_matrix_shape(R: np.ndarray):
     try:
         m, n = R.shape
     except AttributeError as e:
@@ -54,12 +63,7 @@ def brute_force_max(R: np.ndarray, *args, verbose: bool = False):
         msg = f"Expect R to be an np.ndarray with ndim=2, but got {R.shape = }"
         e.args = (msg,)
         raise e
-
-    if m <= n:
-        row_ind, col_ind = brute_force_fat_max(R, verbose=verbose)
-    else:
-        col_ind, row_ind = brute_force_fat_max(R.T, verbose=verbose)
-    return row_ind, col_ind
+    return m, n
 
 
 def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
@@ -92,7 +96,26 @@ def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
 
 
 def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
+    m, n = get_matrix_shape(R)
+
+    if m <= n:
+        row_ind, col_ind = pulp_fat(R, minimize=minimize,
+                                    solver=solver, debug=debug)
+    else:
+        col_ind, row_ind = pulp_fat(R.T, minimize=minimize,
+                                    solver=solver, debug=debug)
+    return row_ind, col_ind
+
+
+def pulp_fat(R, *args, minimize=False, solver=GLPK, debug=False):
     m, n = R.shape
+    assert n >= m, f'Expect n >= m, but got {(m, n) = }'
+    row_ind = tuple(range(m))
+
+    # Convert dtype to float to avoid int overflow in NumPy
+    if not np.issubdtype(R.dtype, np.floating):
+        R = R.astype(np.float64)
+
     sense = LpMinimize if minimize else LpMaximize
     model = LpProblem(name="linear-assignment", sense=sense)
     X = []
@@ -106,47 +129,44 @@ def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
     for i in range(m):
         model += (lpSum(X[i]) == 1, f"row_{i}_sum")
     for j in range(n):
-        model += (lpSum(X[i][j] for i in range(m)) == 1, f"col_{j}_sum")
+        model += (lpSum(X[i][j] for i in range(m)) <= 1, f"col_{j}_sum_ceiling")
+        #model += (lpSum(X[i][j] for i in range(m)) >= 0, f"col_{j}_sum_floor")
     obj_func = lpSum(
         R[i,j]*X[i][j] for i in range(m) for j in range(n)
     )
     model += obj_func
     status = model.solve(solver=solver(msg=False))
     if debug:
+        print(f'{status = }')
         print(f"{model.objective.value() = }")
-    perm = []
+    col_ind = []
     for k, var in enumerate(model.variables()):
         if debug:
             print(f"{var.name} = {var.value()}")
         if var.value() == 1:
             j = k % n
-            perm.append(j)
-    #print(f"{perm = }")
-    return perm
+            col_ind.append(j)
+    return row_ind, col_ind
 
 
-def do_nothing_loop(R):
-    k = R.shape[0]
-    for _ in tqdm(permutations(range(k)), total=np.math.factorial(k)):
+def do_nothing_loop(R: np.ndarray):
+    m, n = get_matrix_shape(R)
+    p, q = min(m,n), max(m,n)
+    total = np.product(range(q, q-p, -1))
+    for _ in tqdm(permutations(range(q), p), total=total):
         pass
 
 
-def do_even_less_loop(R):
-    k = R.shape[0]
-    k_factorial = np.math.factorial(k)
-    for _ in tqdm(range(k_factorial), total=k_factorial):
+def do_even_less_loop(R: np.ndarray):
+    m, n = get_matrix_shape(R)
+    p, q = min(m,n), max(m,n)
+    total = np.product(range(q, q-p, -1))
+    for _ in tqdm(range(total), total=total):
         pass
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "n",
-        type=int,
-        default=10,
-        nargs="*",
-        help="number of rows/cols of the rating/cost matrix",
-    )
     parser.add_argument(
         "-m",
         "--rows",
@@ -183,8 +203,6 @@ def main():
         help="Either to maximize (rating sum) or to minimize (cost sum)",
     )
     args = parser.parse_args()
-    print(f"args.n = {args.n}")
-    n = args.n if isinstance(args.n, list) else [args.n]
     seed = args.seed
     sum_name = "min_cost_sum" if args.minimize else "max_rating_sum"
     assign_name_decalage = len("jonker_volgenant_assign")
@@ -201,8 +219,10 @@ def main():
             "Please specify --rows with a positive integer."
         )
         return
+
     if not isinstance(args.cols, int):
         args.cols = args.rows
+
     m, n = args.rows, args.cols
     rng = np.random.default_rng(seed=seed)
     R = rng.integers(low=1, high=10, size=(m,n))
@@ -238,28 +258,36 @@ def main():
         print()
         print()
 
-    #print("PuLP:")
-    #assign_name = "pulp_assign"
-    #start = time.perf_counter()
-    ## TODO: Other solvers than GLPK?
-    #pulp_perm = pulp_way(
-    #    R,
-    #    minimize=args.minimize,
-    #    solver=GLPK,
-    #    debug=False,
-    #)
-    #end = time.perf_counter()
-    #duration = end - start
-    #sec_str = f"{duration:.9f}"
-    #ms_str = f"{(duration)*10**6:,.0f}"
-    #if args.no_brute_force:
-    #    n_char_sec = len(sec_str)
-    #    n_char_ms = len(ms_str)
+    print("PuLP:")
+    assign_name = "pulp_assign"
+    start = time.perf_counter()
+    # TODO: Other solvers than GLPK?
+    row_ind, col_ind = pulp_way(
+        R,
+        minimize=args.minimize,
+        solver=GLPK,
+        debug=False,
+    )
+    end = time.perf_counter()
+    duration = end - start
+    sec_str = f"{duration:.9f}"
+    ms_str = f"{(duration)*10**6:,.0f}"
+    if args.no_brute_force:
+        n_char_sec = len(sec_str)
+        n_char_ms = len(ms_str)
 
-    #print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
-    #print(f'{assign_name:<{assign_name_decalage}} = {np.array(pulp_perm)}')
-    #print(f'{sum_name} = {R[range(R.shape[0]), pulp_perm].sum()}')
-    #print()
+    pulp_assign = list(zip(row_ind, col_ind))
+    print(f'took {sec_str:>{n_char_sec}} sec, i.e. {ms_str:>{n_char_ms}} ms')
+    print(f'{assign_name:<{assign_name_decalage}} = {pulp_assign}')
+    print(f'{sum_name} = {R[row_ind, col_ind].sum()}', end="")
+    for i, (row, col) in enumerate(pulp_assign):
+        v = R[row, col]
+        if i == 0:
+            print(f' = {v}', end="")
+        else:
+            print(f' + {v}', end="")
+    print()
+    print()
 
     print("Hungarian:")
     assign_name = "kuhn_munkres_assign "
