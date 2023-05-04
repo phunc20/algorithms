@@ -11,7 +11,8 @@ from pulp import (
     LpMaximize,
     LpMinimize,
     lpSum,
-    GLPK,
+    listSolvers,
+    getSolver,
 )
 from scipy.optimize import linear_sum_assignment as jonker_volgenant
 from tqdm import tqdm
@@ -95,7 +96,7 @@ def brute_force_fat_max(R: np.ndarray, *args, verbose: bool = False):
     return row_ind, best_col_ind
 
 
-def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
+def pulp_way(R, *args, minimize=False, solver: None|str =None, debug=False):
     m, n = get_matrix_shape(R)
 
     if m <= n:
@@ -107,7 +108,7 @@ def pulp_way(R, *args, minimize=False, solver=GLPK, debug=False):
     return row_ind, col_ind
 
 
-def pulp_fat(R, *args, minimize=False, solver=GLPK, debug=False):
+def pulp_fat(R, *args, minimize=False, solver: None|str =None, debug=False):
     m, n = R.shape
     assert n >= m, f'Expect n >= m, but got {(m, n) = }'
     row_ind = tuple(range(m))
@@ -135,7 +136,18 @@ def pulp_fat(R, *args, minimize=False, solver=GLPK, debug=False):
         R[i,j]*X[i][j] for i in range(m) for j in range(n)
     )
     model += obj_func
-    status = model.solve(solver=solver(msg=False))
+    available_solvers = listSolvers(onlyAvailable=True)
+    if solver is None:
+        solver = getSolver(np.random.choice(available_solvers), msg=False)
+    elif isinstance(solver, str):
+        if solver not in available_solvers:
+            msg = f'Valid solver strings include {available_solvers}, but got invalid "{solver}"'
+            raise ValueError(msg)
+        solver = getSolver(solver, msg=False)
+    else:
+        msg = f'solver expected to have type str or be None, but got {type(solver) = }'
+        raise TypeError(msg)
+    status = model.solve(solver=solver)
     if debug:
         print(f'{status = }')
         print(f"{model.objective.value() = }")
@@ -261,11 +273,12 @@ def main():
     print("PuLP:")
     assign_name = "pulp_assign"
     start = time.perf_counter()
-    # TODO: Other solvers than GLPK?
+    # TODO: Other solvers than the default one and GLPK?
     row_ind, col_ind = pulp_way(
         R,
         minimize=args.minimize,
-        solver=GLPK,
+        solver=None,
+        #solver="GLPK_CMD",
         debug=False,
     )
     end = time.perf_counter()

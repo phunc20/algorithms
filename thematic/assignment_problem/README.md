@@ -9,13 +9,20 @@ $ pip install -r requirements.txt
 
 As usual, better install them in a virtual environment instead of in the system Python of your machine.
 
-**Rmk.** Specifically, we make use of
-[GLPK (GNU Linear Programming Kit)](https://www.gnu.org/software/glpk/),
-which requires installing GLPK on your machine:
+
+## PuLP
+PuLP seems to provide usage of different solvers. However, it seems that one cannot
+just use whichever solver. Instead, if one desires to use a non-default solver, one
+needs to install that solver to their system.
+
+For example, the [GLPK (GNU Linear Programming Kit)](https://www.gnu.org/software/glpk/)
+could be installed as follows:
 - Linux: Use your Linux distro's package manager, e.g.
   ```sh
-  # For Arch Linux
-  $ pacman -S glpk
+  # Arch Linux
+  $ sudo pacman -S glpk
+  # Debian
+  $ sudo apt install glpk glpk-utils
   ```
 - MacOS
   ```sh
@@ -26,6 +33,13 @@ which requires installing GLPK on your machine:
   from
     - Either <https://winglpk.sourceforge.net/>
     - Or <https://sourceforge.net/projects/winglpk/>
+- Conda users: This seems to be particularly good in that this is platform-independent.
+  ```sh
+  $ conda install -c conda-forge glpk
+  ```
+
+Read more about solvers and their installation in
+[this blog post](https://realpython.com/linear-programming-python/)
 
 
 ## How to Use This Directory
@@ -34,14 +48,16 @@ which requires installing GLPK on your machine:
   ```
   # Run default 10x10 rating matrix
   $ python comparison.py
-  # Run some random 3x3, 5x5, 7x7 rating matrices
-  $ python comparison.py 3 5 7 9
+  # Run some rectangular rating matrices
+  $ python comparison.py --rows 5 --cols 7
+  # Or equiv.
+  $ python comparison.py -m 5 -n 7
   ```
 
 
 ## TODO
 `comparison.py`
-1. [ ] Add flag to max/min the problem
+1. [x] Add flag to max/min the problem
 1. [x] Add solution using PuLP
 1. [ ] [NetworkX's bipartite graph](https://networkx.org/documentation/stable/reference/algorithms/bipartite.html#module-networkx.algorithms.bipartite.matching)
     - <https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.bipartite.matching.minimum_weight_full_matching.html#networkx.algorithms.bipartite.matching.minimum_weight_full_matching>
